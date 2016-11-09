@@ -217,6 +217,8 @@
 	<modules>
 		<module>opennlp-tools</module>
 		<module>opennlp-uima</module>
+		<module>opennlp-brat-annotator</module>
+		<module>opennlp-morfologik-addon</module>
 		<module>opennlp-docs</module>
 		<module>opennlp-distr</module>
 	</modules>

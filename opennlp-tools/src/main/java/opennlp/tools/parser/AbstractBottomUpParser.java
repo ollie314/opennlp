@@ -328,9 +328,9 @@ public abstract class AbstractBottomUpParser implements Parser {
           }
         }
         else {
-          if (reportFailedParse) {
-            System.err.println("Couldn't advance parse "+derivationStage+" stage "+derivationRank+"!\n");
-          }
+          //if (reportFailedParse) {
+          //  System.err.println("Couldn't advance parse "+derivationStage+" stage "+derivationRank+"!\n");
+          //}
           advanceTop(tp);
           completeParses.add(tp);
         }
@@ -339,7 +339,7 @@ public abstract class AbstractBottomUpParser implements Parser {
       odh = ndh;
     }
     if (completeParses.size() == 0) {
-      if (reportFailedParse) System.err.println("Couldn't find parse for: " + tokens);
+      // if (reportFailedParse) System.err.println("Couldn't find parse for: " + tokens);
       //Parse r = (Parse) odh.first();
       //r.show();
       //System.out.println();
@@ -460,9 +460,9 @@ public abstract class AbstractBottomUpParser implements Parser {
       words[i] = children[i].getCoveredText();
     }
     Sequence[] ts = tagger.topKSequences(words);
-    if (ts.length == 0) {
-      System.err.println("no tag sequence");
-    }
+//    if (ts.length == 0) {
+//      System.err.println("no tag sequence");
+//    }
     Parse[] newParses = new Parse[ts.length];
     for (int i = 0; i < ts.length; i++) {
       String[] tags = ts[i].getOutcomes().toArray(new String[words.length]);

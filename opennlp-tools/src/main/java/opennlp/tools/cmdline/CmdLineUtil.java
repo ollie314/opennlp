@@ -177,22 +177,12 @@ public final class CmdLineUtil {
 
     long beginModelWritingTime = System.currentTimeMillis();
 
-    OutputStream modelOut = null;
-    try {
-      modelOut = new BufferedOutputStream(new FileOutputStream(modelFile), IO_BUFFER_SIZE);
+    try (OutputStream modelOut = new BufferedOutputStream(
+        new FileOutputStream(modelFile), IO_BUFFER_SIZE)) {
       model.serialize(modelOut);
     } catch (IOException e) {
       System.err.println("failed");
       throw new TerminateToolException(-1, "Error during writing model file '" + modelFile + "'", e);
-    } finally {
-      if (modelOut != null) {
-        try {
-          modelOut.close();
-        } catch (IOException e) {
-          System.err.println("Failed to properly close model file '" + modelFile + "': " +
-              e.getMessage());
-        }
-      }
     }
 
     long modelWritingDuration = System.currentTimeMillis() - beginModelWritingTime;
@@ -326,28 +316,19 @@ public final class CmdLineUtil {
 
       checkInputFile("Training Parameter", new File(paramFile));
 
-      InputStream paramsIn = null;
-      try {
-        paramsIn = new FileInputStream(new File(paramFile));
-
+      try (InputStream paramsIn  = new FileInputStream(new File(paramFile))) {
         params = new opennlp.tools.util.TrainingParameters(paramsIn);
       } catch (IOException e) {
         throw new TerminateToolException(-1, "Error during parameters loading: " + e.getMessage(), e);
-      }
-      finally {
-        try {
-          if (paramsIn != null)
-            paramsIn.close();
-        } catch (IOException e) {
-          //sorry that this can fail
-        }
       }
 
       if (!TrainerFactory.isValid(params.getSettings())) {
         throw new TerminateToolException(1, "Training parameters file '" + paramFile + "' is invalid!");
       }
 
-      if (!supportSequenceTraining && TrainerFactory.isSupportEventModelSequenceTraining(params.getSettings())) {
+      TrainerFactory.TrainerType trainerType = TrainerFactory.getTrainerType(params.getSettings());
+
+      if (!supportSequenceTraining && trainerType.equals(TrainerFactory.TrainerType.EVENT_MODEL_SEQUENCE_TRAINER)) {
         throw new TerminateToolException(1, "Sequence training is not supported!");
       }
     }
