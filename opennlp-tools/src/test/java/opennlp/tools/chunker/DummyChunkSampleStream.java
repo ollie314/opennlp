@@ -21,70 +21,73 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.ObjectStream;
 
 /**
  * This dummy chunk sample stream reads a file formatted as described at
- * <a hraf="http://www.cnts.ua.ac.be/conll2000/chunking/output.html/">] and
+ * <a href="http://www.cnts.ua.ac.be/conll2000/chunking/output.html/">] and
  * can be used together with DummyChunker simulate a chunker.
  */
 public class DummyChunkSampleStream extends
-		FilterObjectStream<String, ChunkSample> {
+    FilterObjectStream<String, ChunkSample> {
 
-	boolean mIsPredicted;
-	int count = 0;
+  private static final Logger logger = LoggerFactory.getLogger(DummyChunkSampleStream.class);
 
-	// the predicted flag sets if the stream will contain the expected or the
-	// predicted tags.
-	public DummyChunkSampleStream(ObjectStream<String> samples,
-			boolean isPredicted) {
-		super(samples);
-		mIsPredicted = isPredicted;
-	}
+  private final boolean mIsPredicted;
+  private int count = 0;
 
-	/**
-	 * Returns a pair representing the expected and the predicted at 0: the
-	 * chunk tag according to the corpus at 1: the chunk tag predicted
-	 *
-	 * @see opennlp.tools.util.ObjectStream#read()
-	 */
-	public ChunkSample read() throws IOException {
+  // the predicted flag sets if the stream will contain the expected or the
+  // predicted tags.
+  public DummyChunkSampleStream(ObjectStream<String> samples, boolean isPredicted) {
+    super(samples);
+    mIsPredicted = isPredicted;
+  }
 
-		List<String> toks = new ArrayList<String>();
-		List<String> posTags = new ArrayList<String>();
-		List<String> chunkTags = new ArrayList<String>();
-		List<String> predictedChunkTags = new ArrayList<String>();
+  /**
+   * Returns a pair representing the expected and the predicted at 0: the
+   * chunk tag according to the corpus at 1: the chunk tag predicted
+   *
+   * @see ObjectStream#read()
+   */
+  public ChunkSample read() throws IOException {
 
-		for (String line = samples.read(); line != null && !line.equals(""); line = samples
-				.read()) {
-			String[] parts = line.split(" ");
-			if (parts.length != 4) {
-				System.err.println("Skipping corrupt line " + count + ": "
-						+ line);
-			} else {
-				toks.add(parts[0]);
-				posTags.add(parts[1]);
-				chunkTags.add(parts[2]);
-				predictedChunkTags.add(parts[3]);
-			}
-			count++;
-		}
+    List<String> toks = new ArrayList<>();
+    List<String> posTags = new ArrayList<>();
+    List<String> chunkTags = new ArrayList<>();
+    List<String> predictedChunkTags = new ArrayList<>();
 
-		if (toks.size() > 0) {
-			if (mIsPredicted) {
-				return new ChunkSample(toks.toArray(new String[toks.size()]),
-						posTags.toArray(new String[posTags.size()]),
-						predictedChunkTags
-								.toArray(new String[predictedChunkTags.size()]));
-			} else
-				return new ChunkSample(toks.toArray(new String[toks.size()]),
-						posTags.toArray(new String[posTags.size()]),
-						chunkTags.toArray(new String[chunkTags.size()]));
-		} else {
-			return null;
-		}
+    for (String line = samples.read(); line != null && !line.isEmpty(); line = samples
+        .read()) {
+      String[] parts = line.split(" ");
+      if (parts.length != 4) {
+        logger.warn("Skipping corrupt line {}: {}", count, line);
+      } else {
+        toks.add(parts[0]);
+        posTags.add(parts[1]);
+        chunkTags.add(parts[2]);
+        predictedChunkTags.add(parts[3]);
+      }
+      count++;
+    }
 
-	}
+    if (!toks.isEmpty()) {
+      if (mIsPredicted) {
+        return new ChunkSample(toks.toArray(new String[0]),
+            posTags.toArray(new String[0]),
+            predictedChunkTags
+            .toArray(new String[0]));
+      } else
+        return new ChunkSample(toks.toArray(new String[0]),
+            posTags.toArray(new String[0]),
+            chunkTags.toArray(new String[0]));
+    } else {
+      return null;
+    }
+
+  }
 
 }

@@ -17,63 +17,78 @@
 
 package opennlp.tools.namefind;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotSame;
-
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.cmdline.namefind.NameEvaluationErrorListener;
 import opennlp.tools.util.Span;
 
-import org.junit.Test;
-
 /**
- * This is the test class for {@link TokenNameFinderEvaluator}..
+ * This is the test class for {@link TokenNameFinderEvaluator}.
  */
 public class TokenNameFinderEvaluatorTest {
 
+  /**
+   * Return a dummy name finder that always return something expected
+   */
+  public TokenNameFinder mockTokenNameFinder(Span[] ret) {
+    return new TokenNameFinder() {
+      @Override
+      public Span[] find(String[] tokens) {
+        return ret;
+      }
+
+      @Override
+      public void clearAdaptiveData() {
+        //nothing to do here
+      }
+    };
+  }
 
   @Test
-  public void testPositive() {
+  void testPositive() {
     OutputStream stream = new ByteArrayOutputStream();
     TokenNameFinderEvaluationMonitor listener = new NameEvaluationErrorListener(stream);
 
     Span[] pred = createSimpleNameSampleA().getNames();
-    TokenNameFinderEvaluator eval = new TokenNameFinderEvaluator(new DummyNameFinder(pred), listener);
+    // Construct mock object
+    TokenNameFinderEvaluator eval = new TokenNameFinderEvaluator(mockTokenNameFinder(pred), listener);
 
     eval.evaluateSample(createSimpleNameSampleA());
 
-    assertEquals(1.0, eval.getFMeasure().getFMeasure());
+    Assertions.assertEquals(1.0, eval.getFMeasure().getFMeasure());
 
-    assertEquals(0, stream.toString().length());
+    Assertions.assertEquals(0, stream.toString().length());
   }
 
   @Test
-  public void testNegative() {
+  void testNegative() {
     OutputStream stream = new ByteArrayOutputStream();
     TokenNameFinderEvaluationMonitor listener = new NameEvaluationErrorListener(stream);
 
     Span[] pred = createSimpleNameSampleB().getNames();
-    TokenNameFinderEvaluator eval = new TokenNameFinderEvaluator(new DummyNameFinder(pred), listener);
+    // Construct mock object
+    TokenNameFinderEvaluator eval = new TokenNameFinderEvaluator(mockTokenNameFinder(pred), listener);
 
     eval.evaluateSample(createSimpleNameSampleA());
 
-    assertEquals(0.8, eval.getFMeasure().getFMeasure());
+    Assertions.assertEquals(0.8, eval.getFMeasure().getFMeasure());
 
-    assertNotSame(0, stream.toString().length());
+    Assertions.assertNotSame(0, stream.toString().length());
   }
 
 
-
-  private static String[] sentence = {"U", ".", "S", ".", "President", "Barack", "Obama", "is",
+  private static final String[] sentence = {"U", ".", "S", ".", "President", "Barack", "Obama", "is",
       "considering", "sending", "additional", "American", "forces",
       "to", "Afghanistan", "."};
 
   private static NameSample createSimpleNameSampleA() {
 
-    Span[] names = { new Span(0, 4, "Location"), new Span(5, 7, "Person"),
-        new Span(14, 15, "Location") };
+    Span[] names = {new Span(0, 4, "Location"), new Span(5, 7, "Person"),
+        new Span(14, 15, "Location")};
 
     NameSample nameSample;
     nameSample = new NameSample(sentence, names, false);
@@ -83,30 +98,12 @@ public class TokenNameFinderEvaluatorTest {
 
   private static NameSample createSimpleNameSampleB() {
 
-    Span[] names = { new Span(0, 4, "Location"), new Span(14, 15, "Location") };
+    Span[] names = {new Span(0, 4, "Location"), new Span(14, 15, "Location")};
 
     NameSample nameSample;
     nameSample = new NameSample(sentence, names, false);
 
     return nameSample;
-  }
-
-  /** a dummy name finder that always return something expected */
-  class DummyNameFinder implements TokenNameFinder {
-
-    private Span[] ret;
-
-    public DummyNameFinder(Span[] ret) {
-      this.ret = ret;
-    }
-
-    public Span[] find(String[] tokens) {
-      return ret;
-    }
-
-    public void clearAdaptiveData() {
-    }
-
   }
 
 }

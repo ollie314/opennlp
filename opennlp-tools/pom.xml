@@ -16,49 +16,100 @@
    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
    KIND, either express or implied.  See the License for the
    specific language governing permissions and limitations
-   under the License.    
+   under the License.
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-	
+
   <parent>
     <groupId>org.apache.opennlp</groupId>
     <artifactId>opennlp</artifactId>
-    <version>1.6.1-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-    
+
   <artifactId>opennlp-tools</artifactId>
-  <packaging>bundle</packaging>
-  <name>Apache OpenNLP Tools</name>
+  <packaging>jar</packaging>
+  <name>Apache OpenNLP :: Tools</name>
 
   <dependencies>
+    <!-- Internal dependencies -->
     <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.core</artifactId>
-      <version>4.2.0</version>
-      <scope>provided</scope>
-      <optional>true</optional>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-api</artifactId>
     </dependency>
-        
     <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.compendium</artifactId>
-      <version>4.2.0</version>
-      <scope>provided</scope>
-      <optional>true</optional>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-runtime</artifactId>
     </dependency>
-        
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-formats</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-models</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-cli</artifactId>
+    </dependency>
+    <dependency>
+      <artifactId>opennlp-ml-commons</artifactId>
+      <groupId>${project.groupId}</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>opennlp-ml-perceptron</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <artifactId>opennlp-ml-bayes</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <artifactId>opennlp-ml-maxent</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- External dependencies -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- TEST scoped -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.4</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- JUnit5 extension used in CLITest to prevent System.exit(..) calls terminating test runs -->
+    <dependency>
+      <groupId>com.ginsberg</groupId>
+      <artifactId>junit5-system-exit</artifactId>
+      <version>${junit5-system-exit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.hakky54</groupId>
+      <artifactId>logcaptor</artifactId>
+      <version>${logcaptor.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -72,119 +123,63 @@
       </resource>
     </resources>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>-Xmx1024m</argLine>
-          <excludes>
-            <exclude>/opennlp/tools/eval/**/*</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-			
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.3.1</version>
         <configuration>
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
               <mainClass>opennlp.tools.cmdline.CLI</mainClass>
             </manifest>
+            <manifestEntries>
+              <Automatic-Module-Name>org.apache.opennlp.tools</Automatic-Module-Name>
+            </manifestEntries>
           </archive>
         </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
-            
+
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <excludePackageNames>opennlp.tools.cmdline</excludePackageNames>
+        </configuration>
         <executions>
           <execution>
             <id>create-javadoc-jar</id>
-            <configuration>
-              <excludePackageNames>opennlp.tools.cmdline</excludePackageNames>
-            </configuration>
           </execution>
         </executions>
       </plugin>
-			
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Bundle-Activator>opennlp.tools.util.ext.OSGiExtensionLoader</Bundle-Activator>
-            <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
-            <Export-Package>
-              !opennlp.tools.cmdline.*,
-              opennlp.tools.*
-            </Export-Package>
-            <Import-Package>*</Import-Package>
-          </instructions>
-        </configuration>
-      </plugin>
-			
-      <plugin>
-        <groupId>org.apache.rat</groupId>
-        <artifactId>apache-rat-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-cli</id>
-            <configuration>
-              <excludes>
-                <!-- test data -->
-                <exclude>src/test/resources/opennlp/tools/chunker/*.txt</exclude>
-                <exclude>src/test/resources/opennlp/tools/formats/*.sample</exclude>
-                <exclude>src/test/resources/opennlp/tools/namefind/*.txt</exclude>
-                <exclude>src/test/resources/opennlp/tools/namefind/*.train</exclude>
-                <exclude>src/test/resources/opennlp/tools/parser/en_head_rules</exclude>
-                <exclude>src/test/resources/opennlp/tools/parser/en_head_rules</exclude>
-                <exclude>src/test/resources/opennlp/tools/parser/parser.train</exclude>
-                <exclude>src/test/resources/opennlp/tools/parser/test.parse</exclude>
-                <exclude>src/test/resources/opennlp/tools/postag/AnnotatedSentences.txt</exclude>
-                <exclude>src/test/resources/opennlp/tools/sentdetect/Sentences.txt</exclude>
-                <exclude>src/test/resources/opennlp/tools/tokenize/token.train</exclude>
-                <exclude>src/main/java/opennlp/tools/ml/maxent/AllEnglishAffixes.txt</exclude>
-                <exclude>src/test/resources/data/opennlp/maxent/io/rvfes-bug-data-broken.txt</exclude>
-                <exclude>src/test/resources/data/opennlp/maxent/io/rvfes-bug-data-ok.txt</exclude>
-                <exclude>src/test/resources/data/opennlp/maxent/real-valued-weights-training-data.txt</exclude>
-                <exclude>src/test/resources/data/opennlp/maxent/repeat-weighting-training-data.txt</exclude>
-                <exclude>src/test/resources/data/ppa/bitstrings</exclude>
-                <exclude>src/test/resources/data/ppa/devset</exclude>
-                <exclude>src/test/resources/data/ppa/test</exclude>
-                <exclude>src/test/resources/data/ppa/training</exclude>
-                <exclude>src/test/resources/data/ppa/NOTICE</exclude>
-                <exclude>src/test/resources/opennlp/tools/doccat/DoccatSample.txt</exclude>
-                <exclude>src/test/resources/opennlp/tools/formats/brat/voa-with-entities.ann</exclude>
-                <exclude>src/test/resources/opennlp/tools/formats/brat/voa-with-entities.txt</exclude>
-                <exclude>src/test/resources/opennlp/tools/formats/brat/voa-with-relations.ann</exclude>
-                <exclude>src/test/resources/opennlp/tools/formats/brat/voa-with-relations.txt</exclude>
-                
-		<exclude>src/test/resources/opennlp/tools/languagemodel/sentences.txt</exclude>
-		<exclude>src/test/resources/opennlp/tools/lemmatizer/trial.old.tsv</exclude>
-		<exclude>src/test/resources/opennlp/tools/lemmatizer/output.txt</exclude>
 
-                <!-- head rule files, format does not allow AL header -->
-                <exclude>lang/en/parser/en-head_rules</exclude>
-                <exclude>lang/es/parser/es-head-rules</exclude>
-
-                <!-- other licence -->
-		            <exclude>src/main/java/opennlp/tools/stemmer/snowball/*.java</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
+        <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <argLine>-Xmx2048m -DOPENNLP_DOWNLOAD_HOME=${opennlp.download.home} -javaagent:${settings.localRepository}/com/ginsberg/junit5-system-exit/${junit5-system-exit.version}/junit5-system-exit-${junit5-system-exit.version}.jar</argLine>
+          <forkCount>${opennlp.forkCount}</forkCount>
+          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          <excludes>
+            <exclude>**/stemmer/*</exclude>
+            <exclude>**/stemmer/snowball/*</exclude>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+
     </plugins>
   </build>
+
 </project>

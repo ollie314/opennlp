@@ -66,18 +66,15 @@ A form of asbestos once used to make Kent cigarette filters has caused a high
 
 			Most part-of-speech taggers, parsers and so on, work with text
 			tokenized in this manner. It is important to ensure that your
-			tokenizer
-			produces tokens of the type expected by your later text
-			processing
-			components.
+			tokenizer produces tokens of the type expected by your later text
+			processing components.
 		</para>
 
 		<para>
 			With OpenNLP (as with many systems), tokenization is a two-stage
 			process:
 			first, sentence boundaries are identified, then tokens within
-			each
-			sentence are identified.
+			each sentence are identified.
 		</para>
 	
 	<section id="tools.tokenizer.cmdline">
@@ -100,7 +97,7 @@ $ opennlp SimpleTokenizer]]>
 			our website.
 			<screen>
 			<![CDATA[
-$ opennlp TokenizerME en-token.bin]]>
+$ opennlp TokenizerME opennlp-en-ud-ewt-tokens-1.3-2.5.4.bin]]>
 		    </screen>
 			To test the tokenizer copy the sample from above to the console. The
 			whitespace separated tokens will be written back to the
@@ -110,13 +107,13 @@ $ opennlp TokenizerME en-token.bin]]>
 			Usually the input is read from a file and written to a file.
 			<screen>
 			<![CDATA[
-$ opennlp TokenizerME en-token.bin < article.txt > article-tokenized.txt]]>
+$ opennlp TokenizerME opennlp-en-ud-ewt-tokens-1.3-2.5.4.bin < article.txt > article-tokenized.txt]]>
 		    </screen>
 			It can be done in the same way for the Simple Tokenizer.
 		</para>
 		<para>
 			Since most text comes truly raw and doesn't have sentence boundaries
-			and such, its possible to create a pipe which first performs sentence
+			and such, it's possible to create a pipe which first performs sentence
 			boundary detection and tokenization. The following sample illustrates
 			that.
 			<screen>
@@ -154,22 +151,8 @@ London share prices were bolstered largely by continued gains on Wall Street and
 			can be loaded.
 			<programlisting language="java">
 			<![CDATA[
-InputStream modelIn = new FileInputStream("en-token.bin");
-
-try {
+try (InputStream modelIn = new FileInputStream("opennlp-en-ud-ewt-tokens-1.3-2.5.4.bin")) {
   TokenizerModel model = new TokenizerModel(modelIn);
-}
-catch (IOException e) {
-  e.printStackTrace();
-}
-finally {
-  if (modelIn != null) {
-    try {
-      modelIn.close();
-    }
-    catch (IOException e) {
-    }
-  }
 }]]>
 		 </programlisting>
 			After the model is loaded the TokenizerME can be instantiated.
@@ -184,7 +167,7 @@ Tokenizer tokenizer = new TokenizerME(model);]]>
 			Strings, where each String is one token.
 			<programlisting language="java">
 			<![CDATA[
-String tokens[] = tokenizer.tokenize("An input sample sentence.");]]>
+String[] tokens = tokenizer.tokenize("An input sample sentence.");]]>
 		 </programlisting>
 			The output will be an array with these tokens.
 			<programlisting>
@@ -192,11 +175,11 @@ String tokens[] = tokenizer.tokenize("An input sample sentence.");]]>
 "An", "input", "sample", "sentence", "."]]>
 		 </programlisting>
 			The second method, tokenizePos returns an array of Spans, each Span
-			contain the begin and end character offsets of the token in the input
+			contain the start and end character offsets of the token in the input
 			String.
 			<programlisting language="java">
 			<![CDATA[
-Span tokenSpans[] = tokenizer.tokenizePos("An input sample sentence.");]]>		
+Span[] tokenSpans = tokenizer.tokenizePos("An input sample sentence.");]]>		
 			</programlisting>
 			The tokenSpans array now contain 5 elements. To get the text for one
 			span call Span.getCoveredText which takes a span and the input text.
@@ -208,8 +191,8 @@ Span tokenSpans[] = tokenizer.tokenizePos("An input sample sentence.");]]>
 			<![CDATA[
 TokenizerME tokenizer = ...
 
-String tokens[] = tokenizer.tokenize(...);
-double tokenProbs[] = tokenizer.getTokenProbabilities();]]>
+String[] tokens = tokenizer.tokenize(...);
+double[] tokenProbs = tokenizer.getTokenProbabilities();]]>
 			</programlisting>
 			The tokenProbs array now contains one double value per token, the
 			value is between 0 and 1, where 1 is the highest possible probability
@@ -228,7 +211,8 @@ double tokenProbs[] = tokenizer.getTokenProbabilities();]]>
 				available from the model download page on various corpora. The data
 				can be converted to the OpenNLP Tokenizer training format or used directly.
                 The OpenNLP format contains one sentence per line. Tokens are either separated by a
-                whitespace or by a special &lt;SPLIT&gt; tag.
+                whitespace or by a special &lt;SPLIT&gt; tag. Tokens are split automatically on whitespace
+                and at least one &lt;SPLIT&gt; tag must be present in the training text.
 				
 				The following sample shows the sample from above in the correct format.
 				<screen>
@@ -270,38 +254,40 @@ Arguments description:
 				To train the english tokenizer use the following command:
 				<screen>
 			    <![CDATA[
-$ opennlp TokenizerTrainer -model en-token.bin -alphaNumOpt -lang en -data en-token.train -encoding UTF-8
+$ opennlp TokenizerTrainer -model en-custom-token.bin -alphaNumOpt true -lang en -data en-custom-token.train -encoding UTF-8
 
-Indexing events using cutoff of 5
+Indexing events with TwoPass using cutoff of 5
 
-	Computing event counts...  done. 262271 events
+	Computing event counts...  done. 45 events
 	Indexing...  done.
-Sorting and merging events... done. Reduced 262271 events to 59060.
-Done indexing.
-Incorporating indexed data for training...  
+Sorting and merging events... done. Reduced 45 events to 25.
+Done indexing in 0,09 s.
+Incorporating indexed data for training...
 done.
-	Number of Event Tokens: 59060
+	Number of Event Tokens: 25
 	    Number of Outcomes: 2
-	  Number of Predicates: 15695
+	  Number of Predicates: 18
 ...done.
-Computing model parameters...
+Computing model parameters ...
 Performing 100 iterations.
-  1:  .. loglikelihood=-181792.40419263614	0.9614292087192255
-  2:  .. loglikelihood=-34208.094253153664	0.9629238459456059
-  3:  .. loglikelihood=-18784.123872910015	0.9729211388220581
-  4:  .. loglikelihood=-13246.88162585859	0.9856103038460219
-  5:  .. loglikelihood=-10209.262670265718	0.9894422181636552
+  1:  ... loglikelihood=-31.191623125197527	0.8222222222222222
+  2:  ... loglikelihood=-21.036561339080343	0.8666666666666667
+  3:  ... loglikelihood=-16.397882721809086	0.9333333333333333
+  4:  ... loglikelihood=-13.624159882595462	0.9333333333333333
+  5:  ... loglikelihood=-11.762067054883842	0.9777777777777777
 
  ...<skipping a bunch of iterations>...
 
- 95:  .. loglikelihood=-769.2107474529454	0.999511955191386
- 96:  .. loglikelihood=-763.8891914534009	0.999511955191386
- 97:  .. loglikelihood=-758.6685383254891	0.9995157680414533
- 98:  .. loglikelihood=-753.5458314695236	0.9995157680414533
- 99:  .. loglikelihood=-748.5182305519613	0.9995157680414533
-100:  .. loglikelihood=-743.5830058068038	0.9995157680414533
-Wrote tokenizer model.
-Path: en-token.bin]]>
+ 95:  ... loglikelihood=-2.0234942537226366	1.0
+ 96:  ... loglikelihood=-2.0107265117555935	1.0
+ 97:  ... loglikelihood=-1.998139365828305	1.0
+ 98:  ... loglikelihood=-1.9857283791639697	1.0
+ 99:  ... loglikelihood=-1.9734892753591327	1.0
+100:  ... loglikelihood=-1.9614179307958106	1.0
+Writing tokenizer model ... done (0,044s)
+
+Wrote tokenizer model to
+Path: en-custom-token.bin]]>
 				</screen>
 			</para>
 		</section>
@@ -324,15 +310,16 @@ Path: en-token.bin]]>
                 The following sample code illustrates these steps:
                 <programlisting language="java">
                     <![CDATA[
-Charset charset = Charset.forName("UTF-8");
-ObjectStream<String> lineStream = new PlainTextByLineStream(new FileInputStream("en-sent.train"),
-    charset);
+ObjectStream<String> lineStream = new PlainTextByLineStream(new MarkableFileInputStreamFactory(new File("en-custom-sent.train")),
+    StandardCharsets.UTF_8);
+
 ObjectStream<TokenSample> sampleStream = new TokenSampleStream(lineStream);
 
 TokenizerModel model;
 
 try {
-  model = TokenizerME.train("en", sampleStream, true, TrainingParameters.defaultParams());
+  model = TokenizerME.train(sampleStream,
+  	TokenizerFactory.create(null, "eng", null, true, null), TrainingParameters.defaultParams());
 }
 finally {
   sampleStream.close();
@@ -409,19 +396,78 @@ test -> NO_OPERATION
 			<![CDATA[
 He said "This is a test".]]>		
 		</programlisting>
-		TODO: Add documentation about the dictionary format and how to use the API. Contributions are welcome.
 		</para>
 		<section id="tools.tokenizer.detokenizing.api">
 			<title>Detokenizing API</title>
-			<para>TODO: Write documentation about the detokenizer api. Any contributions
-are very welcome. If you want to contribute please contact us on the mailing list
-or comment on the jira issue <ulink url="https://issues.apache.org/jira/browse/OPENNLP-216">OPENNLP-216</ulink>.</para>
+			<para>
+				The Detokenizer can be used to detokenize the tokens to String.
+				To instantiate the Detokenizer (a rule based detokenizer)
+				a DetokenizationDictionary (the rule of dictionary) must be created first.
+				The following code sample shows how a rule dictionary can be loaded.
+				<programlisting language="java">
+					<![CDATA[
+InputStream dictIn = new FileInputStream("latin-detokenizer.xml");
+DetokenizationDictionary dict = new DetokenizationDictionary(dictIn);]]>
+				</programlisting>
+				After the rule dictionary is loaded the DictionaryDetokenizer can be instantiated.
+				<programlisting language="java">
+					<![CDATA[
+Detokenizer detokenizer = new DictionaryDetokenizer(dict);]]>
+				</programlisting>
+				The detokenizer offers two detokenize methods, the first detokenize the input tokens into a String.
+				<programlisting language="java">
+					<![CDATA[
+String[] tokens = new String[]{"A", "co", "-", "worker", "helped", "."};
+String sentence = detokenizer.detokenize(tokens, null);
+Assert.assertEquals("A co-worker helped.", sentence);]]>
+				</programlisting>
+				Tokens which are connected without a space in-between can be separated by a split marker.
+				<programlisting language="java">
+					<![CDATA[
+String sentence = detokenizer.detokenize(tokens, "<SPLIT>");
+Assert.assertEquals("A co<SPLIT>-<SPLIT>worker helped<SPLIT>.", sentence);]]>
+				</programlisting>
+				The API also offers a method which simply returns operations array in the input tokens array.
+				<programlisting language="java">
+					<![CDATA[
+DetokenizationOperation[] operations = detokenizer.detokenize(tokens);
+for (DetokenizationOperation operation : operations) {
+  System.out.println(operation);
+}]]>
+				</programlisting>
+				Output:
+				<programlisting>
+					<![CDATA[
+NO_OPERATION
+NO_OPERATION
+MERGE_BOTH
+NO_OPERATION
+NO_OPERATION
+MERGE_TO_LEFT]]>
+				</programlisting>
+			</para>
 		</section>
 		<section id="tools.tokenizer.detokenizing.dict">
 			<title>Detokenizer Dictionary</title>
-			<para>TODO: Write documentation about the detokenizer dictionary. Any contributions
-are very welcome. If you want to contribute please contact us on the mailing list
-or comment on the jira issue <ulink url="https://issues.apache.org/jira/browse/OPENNLP-217">OPENNLP-217</ulink>.</para>
+			<para>
+				Detokenization Dictionary is the rule dictionary about detokenizer.
+				tokens - an array of tokens that should be detokenized according to an operation.
+				operations - an array of operations which specifies which operation
+				should be used for the provided tokens.
+				The following code sample shows how a rule dictionary can be created.
+				<programlisting language="java">
+					<![CDATA[
+String[] tokens = new String[]{".", "!", "(", ")", "\"", "-"};
+Operation[] operations = new Operation[]{
+    Operation.MOVE_LEFT,
+    Operation.MOVE_LEFT,
+    Operation.MOVE_RIGHT,
+    Operation.MOVE_LEFT,
+    Operation.RIGHT_LEFT_MATCHING,
+    Operation.MOVE_BOTH};
+DetokenizationDictionary dict = new DetokenizationDictionary(tokens, operations);]]>
+				</programlisting>
+			</para>
 		</section>
 	</section>
 </chapter>

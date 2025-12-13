@@ -17,14 +17,24 @@
 
 package opennlp.tools.eval;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import opennlp.tools.cmdline.namefind.TokenNameFinderTrainerTool;
 import opennlp.tools.formats.DirectorySampleStream;
 import opennlp.tools.formats.convert.FileToStringSampleStream;
 import opennlp.tools.formats.ontonotes.OntoNotesNameSampleStream;
@@ -36,53 +46,110 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.model.ModelUtil;
 
-public class OntoNotes4NameFinderEval {
+public class OntoNotes4NameFinderEval extends AbstractEvalTest {
 
-  private static void crossEval(TrainingParameters params, String type, double expectedScore)
-      throws IOException {
-
+  private static ObjectStream<NameSample> createNameSampleStream() throws IOException {
     ObjectStream<File> documentStream = new DirectorySampleStream(new File(
-        EvalUtil.getOpennlpDataDir(), "ontonotes4/data/files/data/english"), new FileFilter() {
+        getOpennlpDataDir(), "ontonotes4/data/files/data/english"),
+        file -> {
+          if (file.isFile()) {
+            return file.getName().endsWith(".name");
+          }
 
-      public boolean accept(File file) {
-        if (file.isFile()) {
-          return file.getName().endsWith(".name");
-        }
+          return file.isDirectory();
+        }, true);
 
-        return file.isDirectory();
+    return new OntoNotesNameSampleStream(new FileToStringSampleStream(
+        documentStream, StandardCharsets.UTF_8));
+  }
+
+  private void crossEval(TrainingParameters params, String type, double expectedScore)
+      throws IOException {
+    try (ObjectStream<NameSample> samples = createNameSampleStream()) {
+
+      TokenNameFinderCrossValidator cv = new TokenNameFinderCrossValidator("eng", null,
+          params, new TokenNameFinderFactory());
+
+      ObjectStream<NameSample> filteredSamples;
+      if (type != null) {
+        filteredSamples = new NameSampleTypeFilter(new String[] {type}, samples);
       }
-    }, true);
+      else {
+        filteredSamples = samples;
+      }
 
-    ObjectStream<NameSample> samples = new OntoNotesNameSampleStream(new FileToStringSampleStream(
-        documentStream, Charset.forName("UTF-8")));
+      cv.evaluate(filteredSamples, 5);
 
-    TokenNameFinderCrossValidator cv = new TokenNameFinderCrossValidator("en",  null,
-        params, new TokenNameFinderFactory());
+      Assertions.assertEquals(expectedScore, cv.getFMeasure().getFMeasure(), 0.001d);
+    }
+  }
 
-    if (type != null) {
-      samples = new NameSampleTypeFilter(new String[]{type}, samples);
+  @BeforeAll
+  static void verifyTrainingData() throws Exception {
+    verifyDirectoryChecksum(new File(getOpennlpDataDir(), "ontonotes4/data/files/data/english").toPath(),
+        ".name", new BigInteger("74675117716526375898817028829433420680"));
+  }
+
+  @Test
+  void evalEnglishPersonNameFinder() throws IOException {
+    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
+    params.put("Threads", "4");
+    crossEval(params, "person", 0.822014580552418d);
+  }
+
+  @Test
+  void evalEnglishDateNameFinder() throws IOException {
+    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
+    params.put("Threads", "4");
+    crossEval(params, "date", 0.8043873255040994d);
+  }
+
+  @Test
+  void evalAllTypesNameFinder() throws IOException {
+    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
+    params.put("Threads", "4");
+    crossEval(params, null, 0.8014054850253551d);
+  }
+
+  @Test
+  void evalAllTypesWithPOSNameFinder() throws IOException, URISyntaxException {
+    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
+    params.put("Threads", "4");
+
+    // load the feature generator
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    try (InputStream in = this.getClass().getResourceAsStream(
+        "ner-en_pos-features.xml")) {
+      byte[] buf = new byte[1024];
+      int len;
+      while ((len = in.read(buf)) > 0) {
+        bytes.write(buf, 0, len);
+      }
     }
 
-    cv.evaluate(samples, 10);
+    byte[] featureGen = bytes.toByteArray();
 
-    Assert.assertEquals(expectedScore, cv.getFMeasure().getFMeasure(), 0.001d);
-  }
+    // create a temp resource folder and copy the pos model there
+    Path resourcesPath = Files.createTempDirectory("opennlp_resources");
+    Files.copy(new File(getOpennlpDataDir(), "models-sf/en-pos-perceptron.bin").toPath(),
+        new File(resourcesPath.toFile(), "en-pos-perceptron.bin").toPath(),
+        StandardCopyOption.REPLACE_EXISTING);
 
-  @Test
-  public void evalEnglishPersonNameFinder() throws IOException {
-    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
-    crossEval(params, "person", 0.8299903903167106d);
-  }
+    Map<String, Object> resources = TokenNameFinderTrainerTool.loadResources(resourcesPath.toFile(),
+        Paths.get(this.getClass().getResource("ner-en_pos-features.xml").toURI()).toFile());
 
-  @Test
-  public void evalEnglishDateNameFinder() throws IOException {
-    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
-    crossEval(params, "date", 0.8065329969459567);
-  }
+    try (ObjectStream<NameSample> samples = createNameSampleStream()) {
 
-  @Test
-  public void evalAllTypesNameFinder() throws IOException {
-    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
-    crossEval(params, null, 0.8061722553169423d);
+      TokenNameFinderCrossValidator cv = new TokenNameFinderCrossValidator("eng", null,
+          params, featureGen, resources);
+
+      ObjectStream<NameSample> filteredSamples;
+
+      filteredSamples = samples;
+
+      cv.evaluate(filteredSamples, 5);
+
+      Assertions.assertEquals(0.8070226153653437d, cv.getFMeasure().getFMeasure(), 0.001d);
+    }
   }
 }

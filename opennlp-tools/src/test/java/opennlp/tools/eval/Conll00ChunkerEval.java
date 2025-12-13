@@ -15,12 +15,18 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.eval;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import opennlp.tools.HighMemoryUsage;
 import opennlp.tools.chunker.ChunkSample;
 import opennlp.tools.chunker.ChunkSampleStream;
 import opennlp.tools.chunker.ChunkerEvaluator;
@@ -33,9 +39,6 @@ import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.model.ModelUtil;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 /**
  * Evaluates the chunker against the English CONLL2000 corpus.
  * <p>
@@ -43,40 +46,72 @@ import org.junit.Test;
  * <a href="http://www.cnts.ua.ac.be/conll2000/chunking/"> site </a>
  * and decompress them into this directory: $OPENNLP_DATA_DIR/conll00.
  */
-public class Conll00ChunkerEval {
+public class Conll00ChunkerEval extends AbstractEvalTest {
+
+  private static File TEST_DATA_FILE;
+  private static File TRAIN_DATA_FILE;
 
   private static ChunkerModel train(File trainFile, TrainingParameters params)
       throws IOException {
 
     ObjectStream<ChunkSample> samples = new ChunkSampleStream(
         new PlainTextByLineStream(
-            new MarkableFileInputStreamFactory(trainFile), "UTF-8"));
+            new MarkableFileInputStreamFactory(trainFile), StandardCharsets.UTF_8));
 
-    return ChunkerME.train("en", samples, params, new ChunkerFactory());
+    return ChunkerME.train("eng", samples, params, new ChunkerFactory());
   }
 
   private static void eval(ChunkerModel model, File testData,
-      double expectedFMeasure) throws IOException {
+                           double expectedFMeasure) throws IOException {
 
     ObjectStream<ChunkSample> samples = new ChunkSampleStream(
-        new PlainTextByLineStream(new MarkableFileInputStreamFactory(testData),
-            "UTF-8"));
+        new PlainTextByLineStream(new MarkableFileInputStreamFactory(testData), StandardCharsets.UTF_8));
 
     ChunkerEvaluator evaluator = new ChunkerEvaluator(new ChunkerME(model));
     evaluator.evaluate(samples);
-    Assert.assertEquals(expectedFMeasure,
-        evaluator.getFMeasure().getFMeasure(), 0.0001);
+    Assertions.assertEquals(expectedFMeasure, evaluator.getFMeasure().getFMeasure(), 0.0001);
+  }
+
+  @BeforeAll
+  static void verifyTrainingData() throws Exception {
+
+    TEST_DATA_FILE = new File(getOpennlpDataDir(), "conll00/test.txt");
+    TRAIN_DATA_FILE = new File(getOpennlpDataDir(), "conll00/train.txt");
+
+    verifyTrainingData(new ChunkSampleStream(
+            new PlainTextByLineStream(new MarkableFileInputStreamFactory(TEST_DATA_FILE),
+                StandardCharsets.UTF_8)),
+        new BigInteger("84610235226433393380477662908529306002"));
+
+    verifyTrainingData(new ChunkSampleStream(
+            new PlainTextByLineStream(new MarkableFileInputStreamFactory(TEST_DATA_FILE),
+                StandardCharsets.UTF_8)),
+        new BigInteger("84610235226433393380477662908529306002"));
+
   }
 
   @Test
-  public void evalEnglish() throws IOException {
-    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
+  void evalEnglishPerceptron() throws IOException {
+    ChunkerModel maxentModel = train(TRAIN_DATA_FILE, createPerceptronParams());
 
-    ChunkerModel maxentModel = train(new File(EvalUtil.getOpennlpDataDir(),
-        "conll00/train.txt"), params);
+    eval(maxentModel, TEST_DATA_FILE, 0.9295018353434714d);
+  }
 
-    eval(maxentModel,
-        new File(EvalUtil.getOpennlpDataDir(), "conll00/test.txt"),
-        0.9239687473746113d);
+  @Test
+  void evalEnglishMaxentGis() throws IOException {
+    ChunkerModel maxentModel = train(TRAIN_DATA_FILE, ModelUtil.createDefaultTrainingParameters());
+
+    eval(maxentModel, TEST_DATA_FILE, 0.9239687473746113d);
+  }
+
+  // Note: Don't try to run this on your MacBook
+  @Test
+  @HighMemoryUsage
+  void evalEnglishMaxentQn() throws IOException {
+    TrainingParameters params = createMaxentQnParams();
+    params.put("Threads", 4);
+    ChunkerModel maxentModel = train(TRAIN_DATA_FILE, params);
+
+    eval(maxentModel, TEST_DATA_FILE, 0.9302599230947028d);
   }
 }

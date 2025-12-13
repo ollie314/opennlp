@@ -17,56 +17,61 @@
 
 package opennlp.tools.postag;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotSame;
-
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import opennlp.tools.cmdline.postag.POSEvaluationErrorListener;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.Sequence;
 
-import org.junit.Test;
-
-
 public class POSEvaluatorTest {
 
+  static POSSample createGoldSample() throws InvalidFormatException {
+    String sentence = "the_DT stories_NNS about_IN well-heeled_JJ "
+            + "communities_NNS and_CC developers_NNS";
+    return POSSample.parse(sentence);
+  }
 
-  @Test
-  public void testPositive() throws InvalidFormatException {
-    OutputStream stream = new ByteArrayOutputStream();
-    POSTaggerEvaluationMonitor listener = new POSEvaluationErrorListener(stream);
-
-    POSEvaluator eval = new POSEvaluator(new DummyPOSTagger(
-        POSSampleTest.createGoldSample()), listener);
-
-    eval.evaluateSample(POSSampleTest.createGoldSample());
-
-    assertEquals(1.0, eval.getWordAccuracy());
-
-    assertEquals(0, stream.toString().length());
+  static POSSample createPredSample() throws InvalidFormatException {
+    String sentence = "the_DT stories_NNS about_NNS well-heeled_JJ "
+            + "communities_NNS and_CC developers_CC";
+    return POSSample.parse(sentence);
   }
 
   @Test
-  public void testNegative() throws InvalidFormatException {
+  void testPositive() throws InvalidFormatException {
     OutputStream stream = new ByteArrayOutputStream();
     POSTaggerEvaluationMonitor listener = new POSEvaluationErrorListener(stream);
 
-    POSEvaluator eval = new POSEvaluator(new DummyPOSTagger(POSSampleTest.createGoldSample()), listener);
+    POSEvaluator eval = new POSEvaluator(
+            new DummyPOSTagger(createGoldSample()), listener);
 
-    eval.evaluateSample(POSSampleTest.createPredSample());
-
-    assertEquals(.7, eval.getWordAccuracy(), .1d);
-
-    assertNotSame(0, stream.toString().length());
+    eval.evaluateSample(createGoldSample());
+    Assertions.assertEquals(1.0, eval.getWordAccuracy(), 0.0);
+    Assertions.assertEquals(0, stream.toString().length());
   }
 
-  class DummyPOSTagger implements POSTagger {
+  @Test
+  void testNegative() throws InvalidFormatException {
+    OutputStream stream = new ByteArrayOutputStream();
+    POSTaggerEvaluationMonitor listener = new POSEvaluationErrorListener(stream);
 
-    private POSSample sample;
+    POSEvaluator eval = new POSEvaluator(
+            new DummyPOSTagger(createGoldSample()), listener);
+
+    eval.evaluateSample(createPredSample());
+    Assertions.assertEquals(.7, eval.getWordAccuracy(), .1d);
+    Assertions.assertNotSame(0, stream.toString().length());
+  }
+
+  static class DummyPOSTagger implements POSTagger {
+
+    private final POSSample sample;
 
     public DummyPOSTagger(POSSample sample) {
       this.sample = sample;
@@ -76,6 +81,7 @@ public class POSEvaluatorTest {
       return Arrays.asList(sample.getTags());
     }
 
+    @Override
     public String[] tag(String[] sentence) {
       return sample.getTags();
     }
@@ -88,15 +94,18 @@ public class POSEvaluatorTest {
       return null;
     }
 
+    @Override
     public Sequence[] topKSequences(String[] sentence) {
       return null;
     }
 
-    public String[] tag(String[] sentence, Object[] additionaContext) {
+    @Override
+    public String[] tag(String[] sentence, Object[] additionalContext) {
       return tag(sentence);
     }
 
-    public Sequence[] topKSequences(String[] sentence, Object[] additionaContext) {
+    @Override
+    public Sequence[] topKSequences(String[] sentence, Object[] additionalContext) {
       return topKSequences(sentence);
     }
 

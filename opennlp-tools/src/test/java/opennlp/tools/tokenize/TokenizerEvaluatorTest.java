@@ -17,65 +17,73 @@
 
 package opennlp.tools.tokenize;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotSame;
-
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 
-import opennlp.tools.cmdline.tokenizer.TokenEvaluationErrorListener;
-import opennlp.tools.util.InvalidFormatException;
-import opennlp.tools.util.Span;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import opennlp.tools.cmdline.tokenizer.TokenEvaluationErrorListener;
+import opennlp.tools.util.Span;
 
 public class TokenizerEvaluatorTest {
 
+  static TokenSample createGoldSample() {
+    return new TokenSample("A test.", new Span[] {
+        new Span(0, 1), new Span(2, 6)});
+  }
+
+  static TokenSample createPredSample() {
+    return new TokenSample("A test.", new Span[] {
+        new Span(0, 3), new Span(2, 6)});
+  }
+
   @Test
-  public void testPositive() throws InvalidFormatException {
+  void testPositive() {
+    OutputStream stream = new ByteArrayOutputStream();
+    TokenizerEvaluationMonitor listener = new TokenEvaluationErrorListener(stream);
+
+    TokenizerEvaluator eval = new TokenizerEvaluator(
+            new DummyTokenizer(createGoldSample()), listener);
+
+    eval.evaluateSample(createGoldSample());
+
+    Assertions.assertEquals(1.0, eval.getFMeasure().getFMeasure(), 0.0);
+    Assertions.assertEquals(0, stream.toString().length());
+  }
+
+  @Test
+  void testNegative() {
     OutputStream stream = new ByteArrayOutputStream();
     TokenizerEvaluationMonitor listener = new TokenEvaluationErrorListener(
         stream);
 
-    TokenizerEvaluator eval = new TokenizerEvaluator(new DummyTokenizer(
-        TokenSampleTest.createGoldSample()), listener);
+    TokenizerEvaluator eval = new TokenizerEvaluator(
+            new DummyTokenizer(createGoldSample()), listener);
 
-    eval.evaluateSample(TokenSampleTest.createGoldSample());
+    eval.evaluateSample(createPredSample());
 
-    assertEquals(1.0, eval.getFMeasure().getFMeasure());
-
-    assertEquals(0, stream.toString().length());
+    Assertions.assertEquals(.5d, eval.getFMeasure().getFMeasure(), .1d);
+    Assertions.assertNotSame(0, stream.toString().length());
   }
 
-  @Test
-  public void testNegative() throws InvalidFormatException {
-    OutputStream stream = new ByteArrayOutputStream();
-    TokenizerEvaluationMonitor listener = new TokenEvaluationErrorListener(
-        stream);
+  /**
+   * a dummy tokenizer that always return something expected
+   */
+  static class DummyTokenizer implements Tokenizer {
 
-    TokenizerEvaluator eval = new TokenizerEvaluator(new DummyTokenizer(
-        TokenSampleTest.createGoldSample()), listener);
-
-    eval.evaluateSample(TokenSampleTest.createPredSample());
-
-    assertEquals(.5d, eval.getFMeasure().getFMeasure(), .1d);
-
-    assertNotSame(0, stream.toString().length());
-  }
-
-  /** a dummy tokenizer that always return something expected */
-  class DummyTokenizer implements Tokenizer {
-
-    private TokenSample sample;
+    private final TokenSample sample;
 
     public DummyTokenizer(TokenSample sample) {
       this.sample = sample;
     }
 
+    @Override
     public String[] tokenize(String s) {
       return null;
     }
 
+    @Override
     public Span[] tokenizePos(String s) {
       return this.sample.getTokenSpans();
     }

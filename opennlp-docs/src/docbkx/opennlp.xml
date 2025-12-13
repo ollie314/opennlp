@@ -28,6 +28,14 @@ under the License.
 
 		<productname>OpenNLP</productname>
 
+		<subtitle>
+			<inlinemediaobject>
+				<imageobject role="fo">
+					<imagedata fileref="./images/opennlp-logo.png" />
+				</imageobject>
+			</inlinemediaobject>
+		</subtitle>
+
 		<authorgroup>
 			<corpauthor>Written and maintained by the Apache OpenNLP Development
 				Community</corpauthor>
@@ -64,10 +72,10 @@ under the License.
 
 		<copyright>
 			<year>2011</year>
-			<year>2014</year>
+			<year>2025</year>
 			<holder>The Apache Software Foundation</holder>
 		</copyright>
-		
+
 		<!-- pubdate><?eval ${project.properties.buildMonth}?>
 			, <?eval ${project.properties.buildYear}?>
 		</pubdate -->
@@ -76,6 +84,7 @@ under the License.
 	<title>Apache OpenNLP Developer Documentation</title>
 	<toc/>
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./introduction.xml"/>
+	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./langdetect.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./sentdetect.xml"/>
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./tokenizer.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./namefinder.xml" />
@@ -85,9 +94,12 @@ under the License.
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./chunker.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./parser.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./coref.xml" />
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./extension.xml" />	
+	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./model-loading.xml" />
+	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./extension.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./corpora.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./machine-learning.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./uima-integration.xml" />
+	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./morfologik-addon.xml" />
 	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./cli.xml" />
+	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="./evaltest.xml" />
 </book>

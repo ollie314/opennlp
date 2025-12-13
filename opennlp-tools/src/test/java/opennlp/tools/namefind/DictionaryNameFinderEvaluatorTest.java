@@ -17,24 +17,23 @@
 
 package opennlp.tools.namefind;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import opennlp.tools.cmdline.namefind.NameEvaluationErrorListener;
 import opennlp.tools.dictionary.Dictionary;
+import opennlp.tools.formats.ResourceAsStreamFactory;
+import opennlp.tools.util.InputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.Span;
 import opennlp.tools.util.StringList;
 import opennlp.tools.util.eval.FMeasure;
-
-import org.junit.Test;
 
 /**
  * Tests the evaluation of a {@link DictionaryNameFinder}.
@@ -42,9 +41,8 @@ import org.junit.Test;
 public class DictionaryNameFinderEvaluatorTest {
 
   @Test
-  public void testEvaluator() throws IOException, URISyntaxException {
-    DictionaryNameFinder nameFinder = new DictionaryNameFinder(
-        createDictionary());
+  void testEvaluator() throws IOException {
+    DictionaryNameFinder nameFinder = new DictionaryNameFinder(createDictionary());
     TokenNameFinderEvaluator evaluator = new TokenNameFinderEvaluator(
         nameFinder, new NameEvaluationErrorListener());
     ObjectStream<NameSample> sample = createSample();
@@ -53,40 +51,31 @@ public class DictionaryNameFinderEvaluatorTest {
     sample.close();
     FMeasure fmeasure = evaluator.getFMeasure();
 
-    assertTrue(fmeasure.getFMeasure() == 1);
-    assertTrue(fmeasure.getRecallScore() == 1);
+    Assertions.assertEquals(1, fmeasure.getFMeasure());
+    Assertions.assertEquals(1, fmeasure.getRecallScore());
   }
 
   /**
-   * Creates a NameSample stream using an annotated corpus
-   *
-   * @return
-   * @throws IOException
-   * @throws URISyntaxException
+   * @return A {@link NameSample} stream using an annotated corpus
+   * @throws IOException Thrown if IO errors occurred.
    */
-  private static ObjectStream<NameSample> createSample() throws IOException,
-      URISyntaxException {
-    FileInputStream sampleDataIn = new FileInputStream(new File(
-        DictionaryNameFinderEvaluatorTest.class.getClassLoader()
-            .getResource("opennlp/tools/namefind/AnnotatedSentences.txt")
-            .toURI()));
+  private static ObjectStream<NameSample> createSample() throws IOException {
 
-    return new NameSampleDataStream(new PlainTextByLineStream(
-        sampleDataIn.getChannel(), "ISO-8859-1"));
+    InputStreamFactory in = new ResourceAsStreamFactory(
+        DictionaryNameFinderEvaluatorTest.class,
+        "/opennlp/tools/namefind/AnnotatedSentences.txt");
+
+    return new NameSampleDataStream(new PlainTextByLineStream(in, StandardCharsets.ISO_8859_1));
   }
 
   /**
-   * Creates a dictionary with all names from the sample data.
-   *
-   * @return a dictionary
-   * @throws IOException
-   * @throws URISyntaxException
+   * @return A {@link Dictionary} with all names from the sample data.
+   * @throws IOException Thrown if IO errors occurred.
    */
-  private static Dictionary createDictionary() throws IOException,
-      URISyntaxException {
+  private static Dictionary createDictionary() throws IOException {
     ObjectStream<NameSample> sampleStream = createSample();
     NameSample sample = sampleStream.read();
-    List<String[]> entries = new ArrayList<String[]>();
+    List<String[]> entries = new ArrayList<>();
     while (sample != null) {
       Span[] names = sample.getNames();
       if (names != null && names.length > 0) {

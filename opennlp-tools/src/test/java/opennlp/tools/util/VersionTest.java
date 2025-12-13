@@ -17,10 +17,8 @@
 
 package opennlp.tools.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for the {@link Version} class.
@@ -28,41 +26,51 @@ import org.junit.Test;
 public class VersionTest {
 
   @Test
-  public void testParse() {
+  void testParse() {
     Version referenceVersion = Version.currentVersion();
-    assertEquals(referenceVersion, Version.parse(referenceVersion.toString()));
+    Assertions.assertEquals(referenceVersion, Version.parse(referenceVersion.toString()));
 
-    assertEquals(new Version(1,5,2, false), Version.parse("1.5.2-incubating"));
-    assertEquals(new Version(1,5,2, false), Version.parse("1.5.2"));
+    Assertions.assertEquals(new Version(1, 5, 2, false),
+        Version.parse("1.5.2-incubating"));
+    Assertions.assertEquals(new Version(1, 5, 2, false),
+        Version.parse("1.5.2"));
   }
 
   @Test
-  public void testParseSnapshot() {
-    assertEquals(new Version(1,5,2, true), Version.parse("1.5.2-incubating-SNAPSHOT"));
-    assertEquals(new Version(1,5,2, true), Version.parse("1.5.2-SNAPSHOT"));
+  void testParseSuffixedVersion() {
+    Assertions.assertEquals(new Version(1, 5, 4, false),
+        Version.parse("1.5.4.foobar-007"));
+    Assertions.assertEquals(new Version(1, 5, 4, false),
+        Version.parse("1.5.4.foobar"));
   }
 
   @Test
-  public void testParseInvalidVersion() {
+  void testParseSnapshot() {
+    Assertions.assertEquals(new Version(1, 5, 2, true),
+        Version.parse("1.5.2-incubating-SNAPSHOT"));
+    Assertions.assertEquals(new Version(1, 5, 2, true),
+        Version.parse("1.5.2-SNAPSHOT"));
+  }
+
+  @Test
+  void testParseInvalidVersion() {
     try {
       Version.parse("1.5.");
-    }
-    catch (NumberFormatException e) {
+    } catch (NumberFormatException e) {
       return;
     }
 
-    assertTrue(false);
+    Assertions.assertFalse(false);
   }
 
   @Test
-  public void testParseInvalidVersion2() {
+  void testParseInvalidVersion2() {
     try {
       Version.parse("1.5");
-    }
-    catch (NumberFormatException e) {
+    } catch (NumberFormatException e) {
       return;
     }
 
-    assertTrue(false);
+    Assertions.fail();
   }
 }

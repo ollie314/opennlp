@@ -18,65 +18,78 @@
 package opennlp.tools.eval;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.formats.DirectorySampleStream;
 import opennlp.tools.formats.convert.FileToStringSampleStream;
 import opennlp.tools.formats.ontonotes.DocumentToLineStream;
 import opennlp.tools.formats.ontonotes.OntoNotesParseSampleStream;
 import opennlp.tools.parser.HeadRules;
+import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.ParserCrossValidator;
 import opennlp.tools.parser.ParserType;
-import opennlp.tools.parser.lang.en.HeadRulesTest;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.model.ModelUtil;
 
-public class OntoNotes4ParserEval {
+public class OntoNotes4ParserEval extends AbstractEvalTest {
 
-  private static void crossEval(TrainingParameters params, HeadRules rules, double expectedScore)
-      throws IOException {
-
+  private static ObjectStream<Parse> createParseSampleStream() throws IOException {
     ObjectStream<File> documentStream = new DirectorySampleStream(new File(
-        EvalUtil.getOpennlpDataDir(), "ontonotes4/data/files/data/english"), new FileFilter() {
+        getOpennlpDataDir(), "ontonotes4/data/files/data/english"),
+        file -> {
+          if (file.isFile()) {
+            return file.getName().endsWith(".parse");
+          }
 
-      public boolean accept(File file) {
-        if (file.isFile()) {
-          return file.getName().endsWith(".parse");
-        }
+          return file.isDirectory();
+        }, true);
 
-        return file.isDirectory();
-      }
-    }, true);
-
-    OntoNotesParseSampleStream samples = new OntoNotesParseSampleStream(
+    return new OntoNotesParseSampleStream(
         new DocumentToLineStream(new FileToStringSampleStream(
-        documentStream, Charset.forName("UTF-8"))));
+            documentStream, StandardCharsets.UTF_8)));
+  }
 
-    ParserCrossValidator cv = new ParserCrossValidator("en", params, rules, ParserType.CHUNKING);
+  private void crossEval(TrainingParameters params, HeadRules rules, double expectedScore)
+      throws IOException {
+    try (ObjectStream<Parse> samples = createParseSampleStream()) {
+      ParserCrossValidator cv = new ParserCrossValidator("eng", params, rules, ParserType.CHUNKING);
+      cv.evaluate(samples, 5);
 
-    cv.evaluate(samples, 10);
+      Assertions.assertEquals(expectedScore, cv.getFMeasure().getFMeasure(), 0.0001d);
+    }
+  }
 
-    Assert.assertEquals(0.8d, cv.getFMeasure().getFMeasure(), expectedScore);
+  @BeforeAll
+  static void verifyTrainingData() throws Exception {
+    verifyTrainingData(createParseSampleStream(), new BigInteger("83833369887442127665956850482411800415"));
   }
 
   @Test
-  public void evalEnglishMaxent() throws IOException {
+  void evalEnglishMaxent() throws IOException {
 
     HeadRules headRules;
-    try (InputStream headRulesIn =
-        HeadRulesTest.class.getResourceAsStream("/opennlp/tools/parser/en_head_rules")) {
+    try (InputStream headRulesIn = OntoNotes4ParserEval.class.
+            getResourceAsStream("/opennlp/tools/parser/en_head_rules")) {
       headRules = new opennlp.tools.parser.lang.en.HeadRules(
-          new InputStreamReader(headRulesIn, "UTF-8"));
+          new InputStreamReader(headRulesIn, StandardCharsets.UTF_8));
     }
 
-    crossEval(ModelUtil.createDefaultTrainingParameters(), headRules, 0.937987617163142d);
+    TrainingParameters params = ModelUtil.createDefaultTrainingParameters();
+    params.put("build.Threads", 4);
+    params.put("tagger.Threads", 4);
+    params.put("chunker.Threads", 4);
+    params.put("check.Threads", 4);
+
+
+    crossEval(params, headRules, 0.9373673649973432d);
   }
 }

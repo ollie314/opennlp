@@ -21,15 +21,41 @@
 #        may be inadvertantly placed in any output files if
 #        output redirection is used.
 
+# determine OPENNLP_HOME - $0 may be a symlink to OpenNLP's home
+PRG="$0"
+
+while [ -h "$PRG" ] ; do
+  ls=$(ls -ld "$PRG")
+  link=$(expr "$ls" : '.*-> \(.*\)$')
+  if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+  else
+    PRG="$(dirname "$PRG")/$link"
+  fi
+done
+
+saveddir=$(pwd)
+
+OPENNLP_HOME=$(dirname "$PRG")/..
+
+# make it fully qualified
+OPENNLP_HOME=$(cd "$OPENNLP_HOME" && pwd)
+
+cd "$saveddir" || exit
+
 if [ -z "$JAVACMD" ] ; then
   if [ -n "$JAVA_HOME"  ] ; then
     JAVACMD="$JAVA_HOME/bin/java"
   else
-    JAVACMD="`which java`"
+    JAVACMD="$(which java)"
   fi
 fi
 
-# Might fail if $0 is a link
-OPENNLP_HOME=`dirname "$0"`/..
+CLASSPATH=$(echo "$OPENNLP_HOME"/lib/*.jar | tr ' ' ':')
 
-$JAVACMD -Xmx1024m -jar $OPENNLP_HOME/lib/opennlp-tools-*.jar $@
+unset HEAP
+if [ -n "$JAVA_HEAP" ] ; then
+  HEAP="-Xmx$JAVA_HEAP"
+fi
+
+$JAVACMD $HEAP -Dlog4j.configurationFile="$OPENNLP_HOME/conf/log4j2.xml" -cp "$CLASSPATH" opennlp.tools.cmdline.CLI "$@"

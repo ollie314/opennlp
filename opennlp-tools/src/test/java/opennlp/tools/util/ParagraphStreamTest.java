@@ -17,34 +17,39 @@
 
 package opennlp.tools.util;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ParagraphStreamTest {
 
   @Test
-  public void testSimpleReading() throws IOException {
+  void testSimpleReading() throws IOException {
+    try (ParagraphStream paraStream = new ParagraphStream(
+        ObjectStreamUtils.createObjectStream("1", "2", "", "", "4", "5"))) {
+      Assertions.assertEquals("1\n2\n", paraStream.read());
+      Assertions.assertEquals("4\n5\n", paraStream.read());
+      Assertions.assertNull(paraStream.read());
+    }
+    try (ParagraphStream paraStream = new ParagraphStream(
+        ObjectStreamUtils.createObjectStream("1", "2", "", "", "4", "5", ""))) {
+      Assertions.assertEquals("1\n2\n", paraStream.read());
+      Assertions.assertEquals("4\n5\n", paraStream.read());
+      Assertions.assertNull(paraStream.read());
+    }
+  }
 
-    String line1 = "1";
-    String line2 = "2";
-    String line3 = "";
-    String line4 = "4";
-    String line5 = "5";
-    String line6 = "";
+  @Test
+  void testReset() throws IOException {
+    try (ParagraphStream paraStream = new ParagraphStream(
+        ObjectStreamUtils.createObjectStream("1", "2", "", "", "4", "5", ""))) {
+      Assertions.assertEquals("1\n2\n", paraStream.read());
+      paraStream.reset();
 
-    ParagraphStream paraStream = new ParagraphStream(
-        ObjectStreamUtils.createObjectStream(line1, line2, line3, line4, line5));
-
-    assertEquals("1\n2\n", paraStream.read());
-    assertEquals("4\n5\n", paraStream.read());
-
-    paraStream = new ParagraphStream(
-        ObjectStreamUtils.createObjectStream(line1, line2, line3, line4, line5, line6));
-
-    assertEquals("1\n2\n", paraStream.read());
-    assertEquals("4\n5\n", paraStream.read());
+      Assertions.assertEquals("1\n2\n", paraStream.read());
+      Assertions.assertEquals("4\n5\n", paraStream.read());
+      Assertions.assertNull(paraStream.read());
+    }
   }
 }

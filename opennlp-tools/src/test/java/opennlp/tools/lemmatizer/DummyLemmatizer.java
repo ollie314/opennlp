@@ -19,19 +19,21 @@ package opennlp.tools.lemmatizer;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 /**
- * This dummy lemmatizer implementation simulates a LemmatizerME. The file has
- * samples of sentences, with target and predicted values.
+ * This dummy lemmatizer implementation simulates a {@link LemmatizerME}.
+ * The file has samples of sentences, with target and predicted values.
  */
 public class DummyLemmatizer implements Lemmatizer {
 
-  private DummyLemmaSampleStream mSampleStream;
+  private final DummyLemmaSampleStream mSampleStream;
 
   public DummyLemmatizer(DummyLemmaSampleStream aSampleStream) {
     mSampleStream = aSampleStream;
   }
 
+  @Override
   public String[] lemmatize(String[] toks, String[] tags) {
     try {
       LemmaSample predsSample = mSampleStream.read();
@@ -54,6 +56,12 @@ public class DummyLemmatizer implements Lemmatizer {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public List<List<String>> lemmatize(List<String> toks,
+      List<String> tags) {
+    return null;
   }
 
 }
